@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Charity Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            flex-grow: 1;
+        }
+        .page {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease-out;
+        }
+        .page.active {
+            display: block; /* Active page */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300;
+        }
+        .btn-secondary {
+            @apply bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-gray-400 transition duration-300;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition duration-300;
+        }
+        .badge-green { @apply bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full; }
+        .badge-blue { @apply bg-blue-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full; }
+        .badge-red { @apply bg-red-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full; }
+        .table-header { @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider; }
+        .table-data { @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900; }
+        .table-data-amount { @apply px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900; }
+
+        /* Custom styles for form inputs */
+        .form-input {
+            @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
+        .text-input {
+            @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50;
+        }
+        .select-input {
+            @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50;
+        }
+
+        /* Message Box Styling */
+        .message-box {
+            @apply p-3 mb-4 rounded-lg text-sm text-center;
+            display: none;
+        }
+        .message-box.success {
+            @apply bg-green-100 text-green-800;
+        }
+        .message-box.error {
+            @apply bg-red-100 text-red-800;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-blue-700 p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center flex-wrap">
+            <a href="#/" class="text-white text-2xl font-bold mb-2 md:mb-0">Church Charity</a>
+            <div class="flex flex-wrap justify-center md:justify-end space-x-2 md:space-x-4">
+                <a href="#/" id="nav-summary" class="text-white hover:text-blue-200 transition duration-300 px-3 py-2 rounded-md">Summary</a>
+                <a href="#/donations" id="nav-donations" class="text-white hover:text-blue-200 transition duration-300 px-3 py-2 rounded-md">Donations</a>
+                <a href="#/admin" id="nav-admin-login" class="text-white hover:text-blue-200 transition duration-300 px-3 py-2 rounded-md">Admin</a>
+                <button id="logout-btn" class="hidden text-white hover:text-blue-200 transition duration-300 px-3 py-2 rounded-md">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 flex-grow">
+        <!-- Message Box for general app messages -->
+        <div id="app-message-box" class="message-box"></div>
+
+        <!-- 1. Admin Login Page -->
+        <section id="admin-login-page" class="page max-w-md mx-auto card p-6">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Admin Login</h2>
+            <form id="admin-login-form" class="space-y-4">
+                <div>
+                    <label for="admin-email" class="form-label">Email:</label>
+                    <input type="email" id="admin-email" class="form-input" required value="Julian@gmail.com">
+                </div>
+                <div>
+                    <label for="admin-password" class="form-label">Password:</label>
+                    <input type="password" id="admin-password" class="form-input" required value="Julian1984">
+                </div>
+                <button type="submit" class="btn-primary w-full">Login</button>
+            </form>
+        </section>
+
+        <!-- 6. Admin Dashboard Page -->
+        <section id="admin-dashboard-page" class="page max-w-2xl mx-auto card p-6">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Admin Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="#/add-donation" class="btn-primary text-center py-4">Add New Donation</a>
+                <a href="#/donations" class="btn-primary text-center py-4">View Donations Table</a>
+                <a href="#/add-expense" class="btn-primary text-center py-4">Add New Expense</a>
+                <button id="dashboard-logout-btn" class="btn-danger w-full py-4">Logout</button>
+            </div>
+        </section>
+
+        <!-- 2. Member Donation Form (Admin-only) -->
+        <section id="add-donation-page" class="page max-w-md mx-auto card p-6">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Add Member Donation</h2>
+            <form id="donation-form" class="space-y-4">
+                <div>
+                    <label for="member-name" class="form-label">Member Name:</label>
+                    <input type="text" id="member-name" class="form-input" required>
+                </div>
+                <div>
+                    <label for="phone-number" class="form-label">Phone Number:</label>
+                    <input type="tel" id="phone-number" class="form-input">
+                </div>
+                <div>
+                    <label for="house-id" class="form-label">House ID:</label>
+                    <input type="text" id="house-id" class="form-input">
+                </div>
+                <div>
+                    <label for="amount" class="form-label">Amount:</label>
+                    <input type="number" id="amount" class="form-input" min="0" step="0.01" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Record Donation</button>
+            </form>
+        </section>
+
+        <!-- 5. Expenses Page (Admin-only) -->
+        <section id="add-expense-page" class="page max-w-md mx-auto card p-6">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Add Expense</h2>
+            <form id="expense-form" class="space-y-4">
+                <div>
+                    <label for="expense-title" class="form-label">Expense Title:</label>
+                    <input type="text" id="expense-title" class="form-input" required>
+                </div>
+                <div>
+                    <label for="expense-amount" class="form-label">Amount:</label>
+                    <input type="number" id="expense-amount" class="form-input" min="0" step="0.01" required>
+                </div>
+                <div>
+                    <label for="expense-date" class="form-label">Date:</label>
+                    <input type="date" id="expense-date" class="form-input" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Record Expense</button>
+            </form>
+        </section>
+
+        <!-- 3. Main Summary Page -->
+        <section id="summary-page" class="page">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Charity Overview</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card text-center">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Total Charity (All Time)</h3>
+                    <p id="total-charity-all-time" class="text-4xl font-bold text-green-600">PKR 0.00</p>
+                </div>
+                <div class="card text-center">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Total Expenses (All Time)</h3>
+                    <p id="total-expenses-all-time" class="text-4xl font-bold text-red-600">PKR 0.00</p>
+                </div>
+                <div class="card text-center">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Net Balance (All Time)</h3>
+                    <p id="net-balance-all-time" class="text-4xl font-bold text-blue-600">PKR 0.00</p>
+                </div>
+            </div>
+
+            <div class="card mb-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Monthly Summary</h3>
+                <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                    <div class="flex-1">
+                        <label for="month-filter" class="form-label">Select Month:</label>
+                        <select id="month-filter" class="form-input">
+                            <option value="">All Months</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="year-filter" class="form-label">Select Year:</label>
+                        <select id="year-filter" class="form-input">
+                            <option value="">All Years</option>
+                            <!-- Years will be populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card text-center bg-green-50">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Charity This Month</h3>
+                        <p id="total-charity-month" class="text-3xl font-bold text-green-600">PKR 0.00</p>
+                    </div>
+                    <div class="card text-center bg-red-50">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Expenses This Month</h3>
+                        <p id="total-expenses-month" class="text-3xl font-bold text-red-600">PKR 0.00</p>
+                    </div>
+                    <div class="card text-center bg-blue-50">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Net Balance This Month</h3>
+                        <p id="net-balance-month" class="text-3xl font-bold text-blue-600">PKR 0.00</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Donations Table Page -->
+        <section id="donations-table-page" class="page">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">All Donations</h2>
+
+            <div class="card mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div class="col-span-full sm:col-span-1 lg:col-span-1">
+                        <label for="donations-member-filter" class="form-label">Filter by Member Name:</label>
+                        <input type="text" id="donations-member-filter" class="form-input" placeholder="Enter member name">
+                    </div>
+                    <div class="col-span-full sm:col-span-1 lg:col-span-1">
+                        <label for="donations-house-id-filter" class="form-label">Filter by House ID:</label>
+                        <input type="text" id="donations-house-id-filter" class="form-input" placeholder="Enter House ID">
+                    </div>
+                    <div class="col-span-full sm:col-span-1 lg:col-span-1">
+                        <label for="donations-month-filter" class="form-label">Filter by Month:</label>
+                        <select id="donations-month-filter" class="form-input">
+                            <option value="">All Months</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="col-span-full sm:col-span-1 lg:col-span-1">
+                        <label for="donations-year-filter" class="form-label">Filter by Year:</label>
+                        <select id="donations-year-filter" class="form-input">
+                            <option value="">All Years</option>
+                            <!-- Years will be populated by JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="text-right text-lg font-semibold text-gray-700">
+                    Total Filtered Donations: <span id="filtered-donations-total" class="text-green-600">PKR 0.00</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg shadow-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="table-header">Name</th>
+                            <th scope="col" class="table-header">Phone</th>
+                            <th scope="col" class="table-header">House ID</th>
+                            <th scope="col" class="table-header">Amount</th>
+                            <th scope="col" class="table-header">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="donations-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Donation rows will be injected here -->
+                    </tbody>
+                </table>
+                <p id="no-donations-message" class="p-4 text-center text-gray-500 hidden">No donations found.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL ---
+        // After deploying your Google Apps Script, copy the "Web app URL" and paste it here.
+        const GOOGLE_APPS_SCRIPT_WEB_APP_URL = 'YOUR_DEPLOYED_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+        // --- Constants ---
+        const ADMIN_EMAIL = 'Julian@gmail.com';
+        const ADMIN_PASSWORD = 'Julian1984';
+        const LOCAL_STORAGE_AUTH_KEY = 'isAdminAuthenticated'; // Still used for frontend session
+        const CURRENCY_SYMBOL = 'PKR ';
+
+        // --- DOM Element References ---
+        const appMessageBox = document.getElementById('app-message-box');
+
+        // Pages
+        const adminLoginPage = document.getElementById('admin-login-page');
+        const adminDashboardPage = document.getElementById('admin-dashboard-page');
+        const addDonationPage = document.getElementById('add-donation-page');
+        const addExpensePage = document.getElementById('add-expense-page');
+        const summaryPage = document.getElementById('summary-page');
+        const donationsTablePage = document.getElementById('donations-table-page');
+
+        // Forms
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const donationForm = document.getElementById('donation-form');
+        const expenseForm = document.getElementById('expense-form');
+
+        // Summary Page Elements
+        const totalCharityAllTime = document.getElementById('total-charity-all-time');
+        const totalExpensesAllTime = document.getElementById('total-expenses-all-time');
+        const netBalanceAllTime = document.getElementById('net-balance-all-time');
+        const monthFilter = document.getElementById('month-filter');
+        const yearFilter = document.getElementById('year-filter');
+        const totalCharityMonth = document.getElementById('total-charity-month');
+        const totalExpensesMonth = document.getElementById('total-expenses-month');
+        const netBalanceMonth = document.getElementById('net-balance-month');
+
+        // Donations Table Page Elements
+        const donationsTableBody = document.getElementById('donations-table-body');
+        const noDonationsMessage = document.getElementById('no-donations-message');
+        const donationsMemberFilter = document.getElementById('donations-member-filter');
+        const donationsHouseIdFilter = document.getElementById('donations-house-id-filter');
+        const donationsMonthFilter = document.getElementById('donations-month-filter');
+        const donationsYearFilter = document.getElementById('donations-year-filter');
+        const filteredDonationsTotal = document.getElementById('filtered-donations-total');
+
+        // Navigation Buttons
+        const logoutBtn = document.getElementById('logout-btn');
+        const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
+        const navAdminLoginLink = document.getElementById('nav-admin-login');
+        const navSummaryLink = document.getElementById('nav-summary');
+        const navDonationsLink = document.getElementById('nav-donations');
+
+        // --- Global Data Arrays (will be populated from Google Sheet) ---
+        let donations = [];
+        let expenses = [];
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a message in the app-wide message box.
+         * @param {string} message - The message text.
+         * @param {string} type - 'success' or 'error'.
+         * @param {number} duration - How long to show the message in ms.
+         */
+        function showAppMessage(message, type, duration = 3000) {
+            appMessageBox.textContent = message;
+            appMessageBox.className = `message-box ${type}`; // Reset classes and apply new ones
+            appMessageBox.style.display = 'block';
+            setTimeout(() => {
+                appMessageBox.style.display = 'none';
+                appMessageBox.textContent = '';
+            }, duration);
+        }
+
+        /**
+         * Sends data to the Google Apps Script backend.
+         * @param {string} action - The action to perform (e.g., 'addDonation', 'getDonations').
+         * @param {Object} data - The data payload for the action.
+         * @returns {Promise<Object>} The response from the Apps Script.
+         */
+        async function sendToAppsScript(action, data = {}) {
+            try {
+                const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'cors', // Crucial for cross-origin requests
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action, data }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error(`Error communicating with Apps Script for action "${action}":`, error);
+                showAppMessage(`Network error or problem with backend for ${action}.`, 'error');
+                return { status: 'error', message: `Network error: ${error.message}` };
+            }
+        }
+
+        /**
+         * Fetches all donations from Google Sheet.
+         * @returns {Promise<Array>} An array of donation records.
+         */
+        async function fetchDonations() {
+            const response = await sendToAppsScript('getDonations');
+            if (response.status === 'success') {
+                // Ensure 'Timestamp' is parsed as a Date object for filtering
+                return response.data.map(d => ({
+                    ...d,
+                    timestamp: new Date(d.Timestamp).toISOString(), // Use 'Timestamp' from sheet
+                    memberName: d['MemberName'], // Adjust key names from sheet headers
+                    phoneNumber: d['PhoneNumber'],
+                    houseId: d['HouseID'],
+                    amount: parseFloat(d['Amount'])
+                }));
+            }
+            return [];
+        }
+
+        /**
+         * Fetches all expenses from Google Sheet.
+         * @returns {Promise<Array>} An array of expense records.
+         */
+        async function fetchExpenses() {
+            const response = await sendToAppsScript('getExpenses');
+            if (response.status === 'success') {
+                // Ensure 'Timestamp' is parsed as a Date object for filtering
+                return response.data.map(e => ({
+                    ...e,
+                    timestamp: new Date(e.Timestamp).toISOString(), // Use 'Timestamp' from sheet
+                    title: e['ExpenseTitle'], // Adjust key names from sheet headers
+                    amount: parseFloat(e['Amount']),
+                    date: e['Date'] // Keep date as string for input type="date"
+                }));
+            }
+            return [];
+        }
+
+        /**
+         * Checks if the user is authenticated as admin.
+         * @returns {boolean} True if authenticated, false otherwise.
+         */
+        function isAuthenticated() {
+            return localStorage.getItem(LOCAL_STORAGE_AUTH_KEY) === 'true';
+        }
+
+        /**
+         * Sets authentication status in localStorage.
+         * @param {boolean} status - True for authenticated, false for logged out.
+         */
+        function setAuthentication(status) {
+            localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, status ? 'true' : 'false');
+            updateAuthUI();
+        }
+
+        /**
+         * Updates UI elements based on authentication status.
+         */
+        function updateAuthUI() {
+            if (isAuthenticated()) {
+                navAdminLoginLink.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                navAdminLoginLink.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Handles page routing based on hash.
+         */
+        async function handleRouting() {
+            const hash = window.location.hash || '#/';
+            const path = hash.split('?')[0]; // Remove query params for routing
+
+            // Hide all pages first
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+            // Update active nav link
+            document.querySelectorAll('nav a').forEach(link => link.classList.remove('font-bold', 'underline'));
+            if (path === '#/') {
+                navSummaryLink.classList.add('font-bold', 'underline');
+            } else if (path === '#/donations') {
+                navDonationsLink.classList.add('font-bold', 'underline');
+            } else if (path === '#/admin' && !isAuthenticated()) {
+                navAdminLoginLink.classList.add('font-bold', 'underline');
+            }
+
+            // Route to correct page
+            switch (path) {
+                case '#/':
+                    summaryPage.classList.add('active');
+                    await loadAllDataAndRender(); // Load data before rendering summary
+                    break;
+                case '#/admin':
+                    if (isAuthenticated()) {
+                        adminDashboardPage.classList.add('active');
+                    } else {
+                        adminLoginPage.classList.add('active');
+                    }
+                    break;
+                case '#/add-donation':
+                    if (isAuthenticated()) {
+                        addDonationPage.classList.add('active');
+                    } else {
+                        window.location.hash = '#/admin'; // Redirect to login
+                    }
+                    break;
+                case '#/donations':
+                    donationsTablePage.classList.add('active');
+                    await loadAllDataAndRender(); // Load data before rendering table
+                    break;
+                case '#/add-expense':
+                    if (isAuthenticated()) {
+                        addExpensePage.classList.add('active');
+                    } else {
+                        window.location.hash = '#/admin'; // Redirect to login
+                    }
+                    break;
+                default:
+                    window.location.hash = '#/'; // Default to summary page
+                    summaryPage.classList.add('active');
+                    await loadAllDataAndRender();
+                    break;
+            }
+        }
+
+        /**
+         * Loads all data (donations and expenses) from Google Sheets and then renders the UI.
+         * This is called on page load and hash changes to ensure data is fresh.
+         */
+        async function loadAllDataAndRender() {
+            donations = await fetchDonations();
+            expenses = await fetchExpenses();
+            renderSummary();
+            renderDonationsTable();
+        }
+
+        /**
+         * Populates the year filter dropdowns with relevant years.
+         */
+        function populateYearFilters() {
+            const currentYear = new Date().getFullYear();
+            const startYear = 2020; // Start from a reasonable year
+            const years = [];
+            for (let i = currentYear; i >= startYear; i--) {
+                years.push(`<option value="${i}">${i}</option>`);
+            }
+            yearFilter.innerHTML = `<option value="">All Years</option>${years.join('')}`;
+            donationsYearFilter.innerHTML = `<option value="">All Years</option>${years.join('')}`;
+        }
+
+        /**
+         * Calculates totals for charity and expenses.
+         * @param {Array} records - The array of records (donations or expenses).
+         * @param {string} month - Optional month (MM format) for filtering.
+         * @param {string} year - Optional year (YYYY format) for filtering.
+         * @returns {number} The total amount.
+         */
+        function calculateTotal(records, month = '', year = '') {
+            return records.filter(record => {
+                if (!month && !year) return true; // No filter
+                const recordDate = new Date(record.timestamp); // Use the parsed timestamp
+                const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
+                const recordYear = String(recordDate.getFullYear());
+
+                const monthMatch = month ? recordMonth === month : true;
+                const yearMatch = year ? recordYear === year : true;
+
+                return monthMatch && yearMatch;
+            }).reduce((sum, record) => sum + parseFloat(record.amount || 0), 0);
+        }
+
+        /**
+         * Renders the main summary page with updated totals.
+         */
+        function renderSummary() {
+            const selectedMonth = monthFilter.value;
+            const selectedYear = yearFilter.value;
+
+            // All Time Totals
+            const totalCharity = calculateTotal(donations);
+            const totalExpenses = calculateTotal(expenses);
+            const netBalance = totalCharity - totalExpenses;
+
+            totalCharityAllTime.textContent = `${CURRENCY_SYMBOL}${totalCharity.toFixed(2)}`;
+            totalExpensesAllTime.textContent = `${CURRENCY_SYMBOL}${totalExpenses.toFixed(2)}`;
+            netBalanceAllTime.textContent = `${CURRENCY_SYMBOL}${netBalance.toFixed(2)}`;
+            if (netBalance >= 0) {
+                netBalanceAllTime.classList.remove('text-red-600');
+                netBalanceAllTime.classList.add('text-blue-600');
+            } else {
+                netBalanceAllTime.classList.remove('text-blue-600');
+                netBalanceAllTime.classList.add('text-red-600');
+            }
+
+            // Monthly Totals
+            const monthlyCharity = calculateTotal(donations, selectedMonth, selectedYear);
+            const monthlyExpenses = calculateTotal(expenses, selectedMonth, selectedYear);
+            const monthlyNetBalance = monthlyCharity - monthlyExpenses;
+
+            totalCharityMonth.textContent = `${CURRENCY_SYMBOL}${monthlyCharity.toFixed(2)}`;
+            totalExpensesMonth.textContent = `${CURRENCY_SYMBOL}${monthlyExpenses.toFixed(2)}`;
+            netBalanceMonth.textContent = `${CURRENCY_SYMBOL}${monthlyNetBalance.toFixed(2)}`;
+            if (monthlyNetBalance >= 0) {
+                netBalanceMonth.classList.remove('text-red-600');
+                netBalanceMonth.classList.add('text-blue-600');
+            } else {
+                netBalanceMonth.classList.remove('text-blue-600');
+                netBalanceMonth.classList.add('text-red-600');
+            }
+        }
+
+        /**
+         * Renders the donations table with filtering.
+         */
+        function renderDonationsTable() {
+            const filterName = donationsMemberFilter.value.toLowerCase();
+            const filterHouseId = donationsHouseIdFilter.value.toLowerCase();
+            const filterMonth = donationsMonthFilter.value;
+            const filterYear = donationsYearFilter.value;
+
+            const filteredDonations = donations.filter(donation => {
+                const nameMatch = donation.memberName.toLowerCase().includes(filterName);
+                const houseIdMatch = filterHouseId ? (donation.houseId || '').toLowerCase().includes(filterHouseId) : true;
+                const donationDate = new Date(donation.timestamp);
+                const monthMatch = filterMonth ? String(donationDate.getMonth() + 1).padStart(2, '0') === filterMonth : true;
+                const yearMatch = filterYear ? String(donationDate.getFullYear()) === filterYear : true;
+                return nameMatch && houseIdMatch && monthMatch && yearMatch;
+            });
+
+            donationsTableBody.innerHTML = ''; // Clear existing rows
+            let currentFilteredTotal = 0;
+
+            if (filteredDonations.length === 0) {
+                noDonationsMessage.classList.remove('hidden');
+            } else {
+                noDonationsMessage.classList.add('hidden');
+                filteredDonations.forEach(donation => {
+                    const row = document.createElement('tr');
+                    const date = new Date(donation.timestamp).toLocaleDateString();
+                    row.innerHTML = `
+                        <td class="table-data">${donation.memberName}</td>
+                        <td class="table-data">${donation.phoneNumber || 'N/A'}</td>
+                        <td class="table-data">${donation.houseId || 'N/A'}</td>
+                        <td class="table-data-amount">${CURRENCY_SYMBOL}${parseFloat(donation.amount).toFixed(2)}</td>
+                        <td class="table-data">${date}</td>
+                    `;
+                    donationsTableBody.appendChild(row);
+                    currentFilteredTotal += parseFloat(donation.amount);
+                });
+            }
+            filteredDonationsTotal.textContent = `${CURRENCY_SYMBOL}${currentFilteredTotal.toFixed(2)}`;
+        }
+
+        // --- Event Listeners ---
+
+        // Admin Login Form Submission
+        adminLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+                setAuthentication(true);
+                window.location.hash = '#/admin'; // Redirect to dashboard
+                await handleRouting(); // Ensure data is loaded and UI updated after login
+                showAppMessage('Login successful!', 'success');
+            } else {
+                showAppMessage('Invalid email or password.', 'error');
+            }
+        });
+
+        // Logout Buttons
+        logoutBtn.addEventListener('click', () => {
+            setAuthentication(false);
+            window.location.hash = '#/'; // Redirect to home/summary
+            showAppMessage('Logged out successfully.', 'success');
+        });
+        dashboardLogoutBtn.addEventListener('click', () => {
+            setAuthentication(false);
+            window.location.hash = '#/'; // Redirect to home/summary
+            showAppMessage('Logged out successfully.', 'success');
+        });
+
+        // Donation Form Submission
+        donationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const memberName = document.getElementById('member-name').value.trim();
+            const phoneNumber = document.getElementById('phone-number').value.trim();
+            const houseId = document.getElementById('house-id').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (!memberName || isNaN(amount) || amount <= 0) {
+                showAppMessage('Please fill in Member Name and a valid Amount.', 'error');
+                return;
+            }
+
+            const newDonation = {
+                memberName,
+                phoneNumber,
+                houseId,
+                amount,
+                timestamp: new Date().toISOString() // Will be replaced by Apps Script's timestamp
+            };
+
+            const response = await sendToAppsScript('addDonation', newDonation);
+            if (response.status === 'success') {
+                donationForm.reset();
+                showAppMessage('Donation recorded successfully to Google Sheet!', 'success');
+                await loadAllDataAndRender(); // Reload data from sheet and re-render
+            } else {
+                showAppMessage(`Failed to record donation: ${response.message}`, 'error');
+            }
+        });
+
+        // Expense Form Submission
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('expense-title').value.trim();
+            const amount = parseFloat(document.getElementById('expense-amount').value);
+            const date = document.getElementById('expense-date').value;
+
+            if (!title || isNaN(amount) || amount <= 0 || !date) {
+                showAppMessage('Please fill in Expense Title, a valid Amount, and Date.', 'error');
+                return;
+            }
+
+            const newExpense = {
+                title,
+                amount,
+                timestamp: new Date(date).toISOString() // Use selected date for timestamp
+            };
+
+            const response = await sendToAppsScript('addExpense', newExpense);
+            if (response.status === 'success') {
+                expenseForm.reset();
+                showAppMessage('Expense recorded successfully to Google Sheet!', 'success');
+                await loadAllDataAndRender(); // Reload data from sheet and re-render
+            } else {
+                showAppMessage(`Failed to record expense: ${response.message}`, 'error');
+            }
+        });
+
+        // Summary Page Filters
+        monthFilter.addEventListener('change', renderSummary);
+        yearFilter.addEventListener('change', renderSummary);
+
+        // Donations Table Filters
+        donationsMemberFilter.addEventListener('input', renderDonationsTable);
+        donationsHouseIdFilter.addEventListener('input', renderDonationsTable);
+        donationsMonthFilter.addEventListener('change', renderDonationsTable);
+        donationsYearFilter.addEventListener('change', renderDonationsTable);
+
+        // Initial Load and Routing
+        window.addEventListener('load', async () => {
+            populateYearFilters(); // Populate years on load
+            updateAuthUI(); // Set initial auth UI state
+            await handleRouting(); // Handle initial route and load data
+        });
+
+        window.addEventListener('hashchange', handleRouting); // Handle route changes
+    </script>
+</body>
+</html>
+
